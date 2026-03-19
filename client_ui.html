@@ -1,0 +1,732 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FlowList Chat</title>
+  <style>
+    :root {
+      --bg: #f4f0e7;
+      --panel: #fffefb;
+      --ink: #1f2937;
+      --muted: #6b7280;
+      --brand: #b03a2e;
+      --brand-dark: #8d2f25;
+      --line: #e7dfd1;
+      --ok: #0b6f45;
+      --warn: #b93815;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 100% 0%, #f9d9c8 0, #f4f0e7 43%),
+        linear-gradient(145deg, #f3e6d8 0%, #f7f3ea 100%);
+      min-height: 100vh;
+    }
+
+    .app {
+      max-width: 1150px;
+      margin: 0 auto;
+      padding: 20px 14px 28px;
+      display: grid;
+      grid-template-columns: 1.1fr 1.4fr;
+      gap: 14px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: 0 14px 28px rgba(100, 52, 25, 0.08);
+      overflow: hidden;
+    }
+
+    .head {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: linear-gradient(90deg, #fff7ef 0%, #fffefb 100%);
+    }
+
+    .title {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: 0.2px;
+    }
+
+    .subtitle {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .body {
+      padding: 14px;
+    }
+
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .stack {
+      display: grid;
+      gap: 8px;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 14px;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    textarea {
+      min-height: 85px;
+      resize: vertical;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 9px 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      color: #fff;
+      background: var(--brand);
+      transition: background 0.15s ease;
+    }
+
+    button:hover { background: var(--brand-dark); }
+    button.alt { background: #455468; }
+    button.alt:hover { background: #374151; }
+    button.ghost {
+      color: var(--ink);
+      background: #f4efe6;
+      border: 1px solid var(--line);
+    }
+    button.ghost:hover { background: #ece4d7; }
+    button.danger { background: #b93815; }
+
+    .status-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 8px 10px;
+      border: 1px dashed var(--line);
+      border-radius: 10px;
+      background: #fffcf6;
+      font-size: 13px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 6px;
+      background: #9ca3af;
+    }
+
+    .dot.ok { background: var(--ok); }
+
+    .task-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 8px;
+      max-height: 460px;
+      overflow: auto;
+    }
+
+    .task {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .task-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .task-title {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 700;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .badge {
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 11px;
+      border: 1px solid #e5d8c4;
+      background: #fdf5e8;
+      color: #7c4a1d;
+      text-transform: lowercase;
+    }
+
+    .task-meta {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .task-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .task-check {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--ok);
+    }
+
+    .task.done .task-title {
+      text-decoration: line-through;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .suggestions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .suggestions button {
+      background: #f4efe6;
+      color: var(--ink);
+      border: 1px solid var(--line);
+      font-size: 12px;
+      padding: 6px 8px;
+    }
+
+    .suggestions button:hover {
+      background: #eee4d4;
+    }
+
+    .chat-wrap {
+      display: grid;
+      grid-template-rows: 1fr auto;
+      gap: 8px;
+      min-height: 560px;
+      height: 100%;
+    }
+
+    .chat-feed {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      padding: 10px;
+      overflow: auto;
+      display: grid;
+      gap: 10px;
+      align-content: start;
+      max-height: 600px;
+    }
+
+    .msg {
+      max-width: 88%;
+      padding: 10px 12px;
+      border-radius: 12px;
+      line-height: 1.35;
+      font-size: 14px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .msg.user {
+      justify-self: end;
+      background: #f2d8cb;
+      border: 1px solid #efc6b1;
+    }
+
+    .msg.assistant {
+      justify-self: start;
+      background: #f7f5f0;
+      border: 1px solid #e7dfd1;
+    }
+
+    .msg.system {
+      justify-self: center;
+      background: #eef7ff;
+      border: 1px dashed #b7d8ff;
+      color: #124687;
+      font-size: 12px;
+    }
+
+    .chat-input-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+    }
+
+    .small {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .auth-panel {
+      position: fixed;
+      inset: 0;
+      background: rgba(35, 17, 6, 0.33);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      z-index: 30;
+    }
+
+    .auth-panel.open { display: flex; }
+
+    .auth-box {
+      width: min(520px, 100%);
+      background: #fffefb;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: 0 20px 38px rgba(47, 25, 13, 0.22);
+      padding: 16px;
+      display: grid;
+      gap: 10px;
+    }
+
+    @media (max-width: 900px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .chat-wrap {
+        min-height: 420px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="panel">
+      <div class="head">
+        <div>
+          <h1 class="title">FlowList</h1>
+          <p class="subtitle">A todo app powered by your FastAPI backend and agent tools</p>
+        </div>
+        <button id="openAuthBtn" class="ghost">Switch Account</button>
+      </div>
+      <div class="body stack">
+        <div class="status-strip">
+          <div>
+            <span class="dot" id="authDot"></span>
+            <strong id="authText">Signed out</strong>
+            <span class="small" id="authUser">User: -</span>
+          </div>
+          <div class="row">
+            <button id="refreshTokenBtn" class="alt">Refresh Token</button>
+            <button id="logoutBtn" class="danger">Logout</button>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <input id="newTaskDescription" placeholder="What needs to be done?" />
+          <select id="newTaskStatus">
+            <option value="pending">pending</option>
+            <option value="in_progress">in_progress</option>
+            <option value="done">done</option>
+          </select>
+        </div>
+        <div class="row">
+          <button id="createTaskBtn">Add Task</button>
+          <button id="loadTasksBtn" class="alt">Refresh List</button>
+        </div>
+
+        <ul id="taskList" class="task-list"></ul>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="head">
+        <div>
+          <h2 class="title" style="font-size:18px;margin:0;">Agent Assistant</h2>
+          <p class="subtitle">Chat naturally with your todo agent</p>
+        </div>
+      </div>
+      <div class="body chat-wrap">
+        <div id="chatFeed" class="chat-feed"></div>
+
+        <div class="suggestions">
+          <button data-prompt="List my tasks and summarize pending ones">Summarize pending</button>
+          <button data-prompt="Add task: plan team retrospective, status pending">Create planning task</button>
+          <button data-prompt="Mark task 1 as done">Mark task done</button>
+        </div>
+
+        <div class="chat-input-row">
+          <textarea id="agentPrompt" placeholder="Message FlowList assistant..."></textarea>
+          <button id="sendAgentBtn">Send</button>
+        </div>
+
+        <details>
+          <summary>Profile setup</summary>
+          <div class="stack" style="margin-top:8px;">
+            <div class="grid2">
+              <input id="firstName" placeholder="first_name" />
+              <input id="lastName" placeholder="last_name" />
+            </div>
+            <input id="profilePicture" placeholder="profile_picture URL" />
+            <button id="createProfileBtn" class="ghost">Create Profile</button>
+          </div>
+        </details>
+      </div>
+    </section>
+  </div>
+
+  <section id="authPanel" class="auth-panel open">
+    <div class="auth-box">
+      <h2 style="margin:0;">Sign in to FlowList</h2>
+      <p class="small" style="margin:0;">Create an account or login to start using the app and agent flow.</p>
+
+      <div class="grid2">
+        <input id="registerName" placeholder="new username" />
+        <input id="registerPassword" placeholder="new password" type="password" />
+      </div>
+      <button id="registerBtn" class="ghost">Register</button>
+
+      <div class="grid2">
+        <input id="loginName" placeholder="username" />
+        <input id="loginPassword" placeholder="password" type="password" />
+      </div>
+      <div class="row">
+        <button id="loginBtn">Login</button>
+        <button id="closeAuthBtn" class="alt">Close</button>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    const STORAGE_KEY = "flowlist_auth_v1";
+
+    const state = {
+      baseUrl: window.location.origin,
+      accessToken: null,
+      refreshToken: null,
+      userId: null,
+      tasks: [],
+      chat: [],
+    };
+
+    function byId(id) {
+      return document.getElementById(id);
+    }
+
+    function val(id) {
+      return byId(id).value.trim();
+    }
+
+    function loadState() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      try {
+        const parsed = JSON.parse(raw);
+        state.accessToken = parsed.accessToken || null;
+        state.refreshToken = parsed.refreshToken || null;
+        state.userId = parsed.userId || null;
+      } catch (_) {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
+        userId: state.userId,
+      }));
+    }
+
+    function clearState() {
+      state.accessToken = null;
+      state.refreshToken = null;
+      state.userId = null;
+      state.tasks = [];
+      localStorage.removeItem(STORAGE_KEY);
+      renderAuth();
+      renderTasks();
+    }
+
+    function addChat(role, text) {
+      state.chat.push({ role, text });
+      renderChat();
+    }
+
+    function renderChat() {
+      const feed = byId("chatFeed");
+      feed.innerHTML = "";
+
+      if (!state.chat.length) {
+        const empty = document.createElement("div");
+        empty.className = "msg system";
+        empty.textContent = "Ask me to create, update, summarize, or clean up your tasks.";
+        feed.appendChild(empty);
+      }
+
+      state.chat.forEach((m) => {
+        const div = document.createElement("div");
+        div.className = `msg ${m.role}`;
+        div.textContent = m.text;
+        feed.appendChild(div);
+      });
+
+      feed.scrollTop = feed.scrollHeight;
+    }
+
+    function renderAuth() {
+      const signedIn = Boolean(state.accessToken);
+      byId("authDot").className = signedIn ? "dot ok" : "dot";
+      byId("authText").textContent = signedIn ? "Signed in" : "Signed out";
+      byId("authUser").textContent = `User: ${state.userId ?? "-"}`;
+      byId("authPanel").classList.toggle("open", !signedIn);
+    }
+
+    function renderTasks() {
+      const list = byId("taskList");
+      list.innerHTML = "";
+
+      if (!state.accessToken) {
+        list.innerHTML = "<li class='task'><div class='task-meta'>Login to view your tasks.</div></li>";
+        return;
+      }
+
+      if (!state.tasks.length) {
+        list.innerHTML = "<li class='task'><div class='task-meta'>No tasks yet. Create one or ask the agent.</div></li>";
+        return;
+      }
+
+      state.tasks.forEach((task) => {
+        const li = document.createElement("li");
+        li.className = `task ${task.status === "done" ? "done" : ""}`;
+        li.innerHTML = `
+          <div class="task-head">
+            <input data-role="done" type="checkbox" class="task-check" />
+            <div>
+              <p class="task-title">${task.description}</p>
+              <div class="task-meta">#${task.id} | ${task.status || "pending"}</div>
+            </div>
+          </div>
+          <div class="task-actions">
+            <span class="badge">${task.status || "pending"}</span>
+            <button data-role="delete" class="danger">Delete</button>
+          </div>
+        `;
+
+        const check = li.querySelector("input[data-role='done']");
+        check.checked = task.status === "done";
+
+        check.onchange = () => {
+          run(async () => {
+            await api("PUT", `/tasks/${task.id}`, {
+              auth: true,
+              params: { status: check.checked ? "done" : "pending" },
+            });
+            await loadTasks();
+          });
+        };
+
+        li.querySelector("button[data-role='delete']").onclick = () => {
+          run(async () => {
+            await api("DELETE", `/tasks/${task.id}`, { auth: true });
+            await loadTasks();
+          });
+        };
+
+        list.appendChild(li);
+      });
+    }
+
+    function parseMaybeJson(text) {
+      try {
+        return JSON.parse(text);
+      } catch (_) {
+        return text;
+      }
+    }
+
+    async function api(method, path, { params = null, body = null, auth = false } = {}) {
+      const url = new URL(path, state.baseUrl);
+      if (params) {
+        Object.entries(params).forEach(([k, v]) => {
+          if (v !== null && v !== undefined && v !== "") {
+            url.searchParams.set(k, String(v));
+          }
+        });
+      }
+
+      const headers = {};
+      if (auth) {
+        if (!state.accessToken) throw new Error("Please login first.");
+        headers.Authorization = `Bearer ${state.accessToken}`;
+      }
+
+      let payload;
+      if (body !== null) {
+        headers["Content-Type"] = "application/json";
+        payload = JSON.stringify(body);
+      }
+
+      const res = await fetch(url.toString(), { method, headers, body: payload });
+      const raw = await res.text();
+      const data = parseMaybeJson(raw);
+
+      if (!res.ok) {
+        const detail = typeof data === "object" && data && data.detail ? data.detail : raw;
+        throw new Error(`${res.status} ${res.statusText}: ${detail}`);
+      }
+      return data;
+    }
+
+    async function loadTasks() {
+      if (!state.accessToken) {
+        state.tasks = [];
+        renderTasks();
+        return;
+      }
+      state.tasks = await api("GET", "/tasks/mine", { auth: true });
+      renderTasks();
+    }
+
+    async function run(fn) {
+      try {
+        await fn();
+      } catch (err) {
+        addChat("system", `Error: ${String(err.message || err)}`);
+      }
+      renderAuth();
+    }
+
+    byId("openAuthBtn").onclick = () => byId("authPanel").classList.add("open");
+    byId("closeAuthBtn").onclick = () => byId("authPanel").classList.remove("open");
+
+    byId("registerBtn").onclick = () => run(async () => {
+      await api("POST", "/users", {
+        params: { name: val("registerName"), password: val("registerPassword") },
+      });
+      addChat("system", "Account created. Now login to continue.");
+    });
+
+    byId("loginBtn").onclick = () => run(async () => {
+      const out = await api("POST", "/login", {
+        params: { name: val("loginName"), password: val("loginPassword") },
+      });
+      state.accessToken = out.access_token;
+      state.refreshToken = out.refresh_token;
+      state.userId = out.user_id;
+      saveState();
+      byId("authPanel").classList.remove("open");
+      addChat("system", `Welcome back, user ${out.user_id}.`);
+      await loadTasks();
+    });
+
+    byId("logoutBtn").onclick = () => run(async () => {
+      clearState();
+      addChat("system", "Logged out.");
+    });
+
+    byId("refreshTokenBtn").onclick = () => run(async () => {
+      if (!state.refreshToken) throw new Error("Refresh token is missing.");
+      const out = await api("POST", "/refresh", { body: state.refreshToken });
+      state.accessToken = out.access_token;
+      state.refreshToken = out.refresh_token;
+      saveState();
+      addChat("system", "Access token refreshed.");
+    });
+
+    byId("createTaskBtn").onclick = () => run(async () => {
+      const out = await api("POST", "/tasks", {
+        auth: true,
+        params: {
+          description: val("newTaskDescription"),
+          status: val("newTaskStatus") || "pending",
+        },
+      });
+      byId("newTaskDescription").value = "";
+      addChat("assistant", `Created task: ${out.description}`);
+      await loadTasks();
+    });
+
+    byId("loadTasksBtn").onclick = () => run(async () => {
+      await loadTasks();
+      addChat("system", `Loaded ${state.tasks.length} task(s).`);
+    });
+
+    byId("createProfileBtn").onclick = () => run(async () => {
+      await api("POST", "/profile", {
+        auth: true,
+        params: {
+          first_name: val("firstName"),
+          last_name: val("lastName"),
+          profile_picture: val("profilePicture") || undefined,
+        },
+      });
+      addChat("system", "Profile created.");
+    });
+
+    byId("sendAgentBtn").onclick = () => run(async () => {
+      const prompt = val("agentPrompt");
+      if (!prompt) throw new Error("Type a message first.");
+      addChat("user", prompt);
+      const out = await api("POST", "/agent/execute", {
+        auth: true,
+        body: { instruction: prompt },
+      });
+      const reply = out && out.result ? String(out.result) : "Done.";
+      addChat("assistant", reply);
+      byId("agentPrompt").value = "";
+      await loadTasks();
+    });
+
+    document.querySelectorAll(".suggestions button[data-prompt]").forEach((btn) => {
+      btn.onclick = () => {
+        byId("agentPrompt").value = btn.dataset.prompt || "";
+      };
+    });
+
+    loadState();
+    renderAuth();
+    renderChat();
+    loadTasks().catch(() => {
+      renderTasks();
+    });
+  </script>
+</body>
+</html>
