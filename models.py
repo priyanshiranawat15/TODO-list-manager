@@ -60,10 +60,10 @@ class Message(Base):
     __tablename__ = "messages"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    session_id = Column(Integer, ForeignKey("agent_sessions.id"), nullable=False)
     role = Column(String(20))  
     content = Column(Text, nullable=False)
     created_at = Column(TIMESTAMP, server_default=func.now())
 
-    user = relationship("User", back_populates="messages")
+    agent_session = relationship("AgentSession", back_populates="messages")
 
