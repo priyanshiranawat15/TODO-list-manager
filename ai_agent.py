@@ -2,11 +2,16 @@ import os
 from contextvars import ContextVar
 import httpx
 from agents import Agent, Runner, function_tool
+from dotenv import load_dotenv
+
+from models import AgentSession
+
+load_dotenv()
 
 BASE_URL = os.getenv("APP_BASE_URL", "http://127.0.0.1:8000")
 AUTH_HEADER_CTX: ContextVar[str] = ContextVar("AUTH_HEADER_CTX", default="")
 
-LAST_RESPONSE_ID = None
+
 MODEL = os.getenv("OPENAI_MODEL", "gpt-5.1")
 
 def _headers() -> dict:
@@ -66,17 +71,36 @@ tool_agent = Agent(
     tools=[create_task_tool, list_my_tasks_tool, update_task_status_tool, delete_task_tool, list_all_users_tool],
 )
 
-
-async def run_agent_for_user(auth_header: str, instruction: str):
-    global LAST_RESPONSE_ID
+async def run_agent_for_user(
+    user_id: int,
+    auth_header: str,
+    instruction: str,
+    db
+):
     token = AUTH_HEADER_CTX.set(auth_header)
+
     try:
+        
+        session = db.query(AgentSession).filter_by(user_id=user_id).first()
+        last_response_id = session.last_response_id if session else None
         result = await Runner.run(
             tool_agent,
             instruction,
-            previous_response_id=LAST_RESPONSE_ID
+            previous_response_id=last_response_id
         )
-        LAST_RESPONSE_ID = result.last_response_id
+
+        if session:
+            session.last_response_id = result.last_response_id
+        else:
+            new_session = AgentSession(
+                user_id=user_id,
+                last_response_id=result.last_response_id
+            )
+            db.add(new_session)
+
+        db.commit()
+
         return result.final_output
+
     finally:
         AUTH_HEADER_CTX.reset(token)

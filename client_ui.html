@@ -325,6 +325,43 @@
       gap: 10px;
     }
 
+    .auth-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .auth-tabs button {
+      background: #f4efe6;
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+
+    .auth-tabs button.active {
+      background: var(--brand);
+      color: #fff;
+      border-color: var(--brand);
+    }
+
+    .auth-section {
+      display: grid;
+      gap: 10px;
+    }
+
+    .auth-section.hidden {
+      display: none;
+    }
+
+    .auth-note {
+      margin: 0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .auth-submit {
+      width: 100%;
+    }
+
     @media (max-width: 900px) {
       .app {
         grid-template-columns: 1fr;
@@ -417,19 +454,31 @@
       <h2 style="margin:0;">Sign in to FlowList</h2>
       <p class="small" style="margin:0;">Create an account or login to start using the app and agent flow.</p>
 
-      <div class="grid2">
-        <input id="registerName" placeholder="new username" />
-        <input id="registerPassword" placeholder="new password" type="password" />
+      <div class="auth-tabs">
+        <button id="showLoginTab" class="active" type="button">Login</button>
+        <button id="showRegisterTab" type="button">Register</button>
       </div>
-      <button id="registerBtn" class="ghost">Register</button>
 
-      <div class="grid2">
-        <input id="loginName" placeholder="username" />
-        <input id="loginPassword" placeholder="password" type="password" />
+      <p id="authModeHint" class="auth-note">Use your existing account credentials.</p>
+
+      <div id="loginSection" class="auth-section">
+        <div class="grid2">
+          <input id="loginName" placeholder="username" />
+          <input id="loginPassword" placeholder="password" type="password" />
+        </div>
       </div>
+
+      <div id="registerSection" class="auth-section hidden">
+        <div class="grid2">
+          <input id="registerName" placeholder="new username" />
+          <input id="registerPassword" placeholder="new password" type="password" />
+        </div>
+      </div>
+
+      <button id="authSubmitBtn" class="auth-submit" type="button">Login</button>
+
       <div class="row">
-        <button id="loginBtn">Login</button>
-        <button id="closeAuthBtn" class="alt">Close</button>
+        <button id="closeAuthBtn" class="alt" type="button">Close</button>
       </div>
     </div>
   </section>
@@ -444,6 +493,7 @@
       userId: null,
       tasks: [],
       chat: [],
+      authMode: "login",
     };
 
     function byId(id) {
@@ -480,9 +530,50 @@
       state.refreshToken = null;
       state.userId = null;
       state.tasks = [];
+      state.chat = [];
       localStorage.removeItem(STORAGE_KEY);
       renderAuth();
       renderTasks();
+      renderChat();
+    }
+
+    function setAuthMode(mode) {
+      const isLogin = mode === "login";
+      state.authMode = isLogin ? "login" : "register";
+      byId("loginSection").classList.toggle("hidden", !isLogin);
+      byId("registerSection").classList.toggle("hidden", isLogin);
+      byId("showLoginTab").classList.toggle("active", isLogin);
+      byId("showRegisterTab").classList.toggle("active", !isLogin);
+      byId("authSubmitBtn").textContent = isLogin ? "Login" : "Register";
+      byId("authModeHint").textContent = isLogin
+        ? "Use your existing account credentials."
+        : "Create a new account with a unique username.";
+    }
+
+    async function submitAuth() {
+      if (state.authMode === "register") {
+        await api("POST", "/users", {
+          params: { name: val("registerName"), password: val("registerPassword") },
+        });
+        byId("loginName").value = val("registerName");
+        byId("loginPassword").value = "";
+        setAuthMode("login");
+        addChat("system", "Account created. Please login.");
+        return;
+      }
+
+      const out = await api("POST", "/login", {
+        params: { name: val("loginName"), password: val("loginPassword") },
+      });
+      state.accessToken = out.access_token;
+      state.refreshToken = out.refresh_token;
+      state.userId = out.user_id;
+      state.chat = [];
+      saveState();
+      byId("authPanel").classList.remove("open");
+      await loadAgentHistory();
+      addChat("system", `Welcome back, user ${out.user_id}. History synced.`);
+      await loadTasks();
     }
 
     function addChat(role, text) {
@@ -625,6 +716,24 @@
       renderTasks();
     }
 
+    async function loadAgentHistory() {
+      if (!state.accessToken) {
+        state.chat = [];
+        renderChat();
+        return;
+      }
+      const history = await api("GET", "/agent/history", {
+        auth: true,
+        params: { limit: 100 },
+      });
+      state.chat = Array.isArray(history)
+        ? history
+            .filter((m) => m && typeof m.content === "string")
+            .map((m) => ({ role: m.role || "assistant", text: m.content }))
+        : [];
+      renderChat();
+    }
+
     async function run(fn) {
       try {
         await fn();
@@ -634,27 +743,24 @@
       renderAuth();
     }
 
-    byId("openAuthBtn").onclick = () => byId("authPanel").classList.add("open");
+    byId("openAuthBtn").onclick = () => {
+      setAuthMode("login");
+      byId("authPanel").classList.add("open");
+    };
     byId("closeAuthBtn").onclick = () => byId("authPanel").classList.remove("open");
 
-    byId("registerBtn").onclick = () => run(async () => {
-      await api("POST", "/users", {
-        params: { name: val("registerName"), password: val("registerPassword") },
-      });
-      addChat("system", "Account created. Now login to continue.");
-    });
+    byId("showLoginTab").onclick = () => setAuthMode("login");
+    byId("showRegisterTab").onclick = () => setAuthMode("register");
 
-    byId("loginBtn").onclick = () => run(async () => {
-      const out = await api("POST", "/login", {
-        params: { name: val("loginName"), password: val("loginPassword") },
+    byId("authSubmitBtn").onclick = () => run(submitAuth);
+
+    ["loginName", "loginPassword", "registerName", "registerPassword"].forEach((id) => {
+      byId(id).addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          byId("authSubmitBtn").click();
+        }
       });
-      state.accessToken = out.access_token;
-      state.refreshToken = out.refresh_token;
-      state.userId = out.user_id;
-      saveState();
-      byId("authPanel").classList.remove("open");
-      addChat("system", `Welcome back, user ${out.user_id}.`);
-      await loadTasks();
     });
 
     byId("logoutBtn").onclick = () => run(async () => {
@@ -701,18 +807,38 @@
       addChat("system", "Profile created.");
     });
 
-    byId("sendAgentBtn").onclick = () => run(async () => {
-      const prompt = val("agentPrompt");
-      if (!prompt) throw new Error("Type a message first.");
-      addChat("user", prompt);
-      const out = await api("POST", "/agent/execute", {
-        auth: true,
-        body: { instruction: prompt },
-      });
-      const reply = out && out.result ? String(out.result) : "Done.";
-      addChat("assistant", reply);
-      byId("agentPrompt").value = "";
-      await loadTasks();
+    byId("sendAgentBtn").onclick = async () => {
+      const input = byId("agentPrompt");
+      const prompt = input.value.trim();
+      if (!prompt) {
+        addChat("system", "Error: Type a message first.");
+        return;
+      }
+
+      input.value = "";
+
+      try {
+        addChat("user", prompt);
+        const out = await api("POST", "/agent/execute", {
+          auth: true,
+          body: { instruction: prompt },
+        });
+        const reply = out && out.result ? String(out.result) : "Done.";
+        addChat("assistant", reply);
+        await loadTasks();
+      } catch (err) {
+        input.value = prompt;
+        addChat("system", `Error: ${String(err.message || err)}`);
+      }
+
+      renderAuth();
+    };
+
+    byId("agentPrompt").addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        byId("sendAgentBtn").click();
+      }
     });
 
     document.querySelectorAll(".suggestions button[data-prompt]").forEach((btn) => {
@@ -722,8 +848,12 @@
     });
 
     loadState();
+    setAuthMode("login");
     renderAuth();
     renderChat();
+    loadAgentHistory().catch(() => {
+      renderChat();
+    });
     loadTasks().catch(() => {
       renderTasks();
     });
