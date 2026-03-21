@@ -15,8 +15,7 @@ class User(Base):
     
     tasks = relationship("Task",back_populates="user")
     profile = relationship("UserProfile", back_populates="user", uselist=False)
-    agent_session = relationship("AgentSession", back_populates="user", uselist=False)
-    messages = relationship("Message", back_populates="user")
+    agent_sessions = relationship("AgentSession", back_populates="user")
     
 class Task(Base):
     __tablename__ ="tasks"
@@ -49,12 +48,13 @@ class AgentSession(Base):
     __tablename__ = "agent_sessions"
     
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     last_response_id = Column(Text, nullable=True)
     created_at = Column(TIMESTAMP, server_default=func.now())
     updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
 
-    user = relationship("User", back_populates="agent_session")
+    user = relationship("User", back_populates="agent_sessions")
+    messages = relationship("Message", back_populates="agent_session")
     
 class Message(Base):
     __tablename__ = "messages"
