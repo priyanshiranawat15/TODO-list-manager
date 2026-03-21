@@ -71,7 +71,8 @@ tool_agent = Agent(
     tools=[create_task_tool, list_my_tasks_tool, update_task_status_tool, delete_task_tool, list_all_users_tool],
 )
 
-async def run_agent_for_user(
+async def run_agent_for_session(
+    session_id: int,
     user_id: int,
     auth_header: str,
     instruction: str,
@@ -81,22 +82,22 @@ async def run_agent_for_user(
 
     try:
         
-        session = db.query(AgentSession).filter_by(user_id=user_id).first()
-        last_response_id = session.last_response_id if session else None
+        session = (
+            db.query(AgentSession)
+            .filter_by(id=session_id, user_id=user_id)
+            .first()
+        )
+        if not session:
+            raise ValueError("Session not found for this user")
+
+        last_response_id = session.last_response_id
         result = await Runner.run(
             tool_agent,
             instruction,
             previous_response_id=last_response_id
         )
 
-        if session:
-            session.last_response_id = result.last_response_id
-        else:
-            new_session = AgentSession(
-                user_id=user_id,
-                last_response_id=result.last_response_id
-            )
-            db.add(new_session)
+        session.last_response_id = result.last_response_id
 
         db.commit()
 

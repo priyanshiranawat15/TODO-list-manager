@@ -6,15 +6,15 @@
   <title>FlowList Chat</title>
   <style>
     :root {
-      --bg: #f4f0e7;
-      --panel: #fffefb;
-      --ink: #1f2937;
-      --muted: #6b7280;
-      --brand: #b03a2e;
-      --brand-dark: #8d2f25;
-      --line: #e7dfd1;
-      --ok: #0b6f45;
-      --warn: #b93815;
+      --bg: #f7efe7;
+      --panel: #fff9f7;
+      --ink: #3d2f2f;
+      --muted: #8a7174;
+      --brand: #d9879d;
+      --brand-dark: #c86f88;
+      --line: #ecd9d8;
+      --ok: #658f76;
+      --warn: #c46a7d;
     }
 
     * { box-sizing: border-box; }
@@ -22,10 +22,10 @@
     body {
       margin: 0;
       color: var(--ink);
-      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      font-family: "Avenir Next", "Trebuchet MS", "Segoe UI", sans-serif;
       background:
-        radial-gradient(circle at 100% 0%, #f9d9c8 0, #f4f0e7 43%),
-        linear-gradient(145deg, #f3e6d8 0%, #f7f3ea 100%);
+        radial-gradient(circle at 100% 0%, #f5dce4 0, #f7efe7 40%),
+        linear-gradient(145deg, #f8efe4 0%, #f9f2eb 100%);
       min-height: 100vh;
     }
 
@@ -41,8 +41,8 @@
     .panel {
       background: var(--panel);
       border: 1px solid var(--line);
-      border-radius: 16px;
-      box-shadow: 0 14px 28px rgba(100, 52, 25, 0.08);
+      border-radius: 20px;
+      box-shadow: 0 14px 28px rgba(128, 84, 94, 0.1);
       overflow: hidden;
     }
 
@@ -53,7 +53,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      background: linear-gradient(90deg, #fff7ef 0%, #fffefb 100%);
+      background: linear-gradient(90deg, #fff4f0 0%, #fffaf7 100%);
     }
 
     .title {
@@ -95,12 +95,12 @@
       border-radius: 10px;
       padding: 10px;
       font-size: 14px;
-      background: #fff;
+      background: #fffcfb;
       color: var(--ink);
     }
 
     textarea {
-      min-height: 85px;
+      min-height: 56px;
       resize: vertical;
     }
 
@@ -121,11 +121,11 @@
     button.alt:hover { background: #374151; }
     button.ghost {
       color: var(--ink);
-      background: #f4efe6;
+      background: #f4e7d8;
       border: 1px solid var(--line);
     }
-    button.ghost:hover { background: #ece4d7; }
-    button.danger { background: #b93815; }
+    button.ghost:hover { background: #efdfce; }
+    button.danger { background: var(--warn); }
 
     .status-strip {
       display: flex;
@@ -136,7 +136,7 @@
       padding: 8px 10px;
       border: 1px dashed var(--line);
       border-radius: 10px;
-      background: #fffcf6;
+      background: #fff7f3;
       font-size: 13px;
     }
 
@@ -192,9 +192,9 @@
       border-radius: 999px;
       padding: 4px 8px;
       font-size: 11px;
-      border: 1px solid #e5d8c4;
-      background: #fdf5e8;
-      color: #7c4a1d;
+      border: 1px solid #edd8da;
+      background: #f8e6e9;
+      color: #8f5761;
       text-transform: lowercase;
     }
 
@@ -222,42 +222,84 @@
       font-weight: 600;
     }
 
-    .suggestions {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-
-    .suggestions button {
-      background: #f4efe6;
-      color: var(--ink);
-      border: 1px solid var(--line);
-      font-size: 12px;
-      padding: 6px 8px;
-    }
-
-    .suggestions button:hover {
-      background: #eee4d4;
-    }
-
     .chat-wrap {
       display: grid;
-      grid-template-rows: 1fr auto;
+      grid-template-columns: 220px 1fr;
+      gap: 10px;
+      min-height: 0;
+      height: min(72vh, 660px);
+    }
+
+    .chat-sidebar {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff5f1;
+      padding: 8px;
+      display: grid;
       gap: 8px;
-      min-height: 560px;
-      height: 100%;
+      align-content: start;
+      overflow: auto;
+      max-height: 700px;
+    }
+
+    .chat-main {
+      display: grid;
+      grid-template-rows: 1fr auto auto;
+      gap: 8px;
+      min-height: 0;
+    }
+
+    .session-list {
+      display: grid;
+      gap: 6px;
+      align-content: start;
+    }
+
+    .session-item {
+      width: 100%;
+      text-align: left;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: #fff8f5;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .session-item:hover {
+      background: #f8e8e4;
+    }
+
+    .session-item.active {
+      background: #f8dfe6;
+      border-color: #e9becd;
+    }
+
+    .session-empty {
+      padding: 10px;
+      border: 1px dashed var(--line);
+      border-radius: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      background: #fffaf8;
     }
 
     .chat-feed {
       border: 1px solid var(--line);
       border-radius: 12px;
-      background: #fff;
+      background: #fffdfc;
       padding: 10px;
       overflow: auto;
       display: grid;
       gap: 10px;
       align-content: start;
-      max-height: 600px;
+      flex: 1;
+      min-height: 300px;
     }
 
     .msg {
@@ -272,28 +314,48 @@
 
     .msg.user {
       justify-self: end;
-      background: #f2d8cb;
-      border: 1px solid #efc6b1;
+      background: #f8dfe6;
+      border: 1px solid #efc9d4;
     }
 
     .msg.assistant {
       justify-self: start;
-      background: #f7f5f0;
-      border: 1px solid #e7dfd1;
+      background: #f7eee6;
+      border: 1px solid #eadbcb;
     }
 
     .msg.system {
       justify-self: center;
-      background: #eef7ff;
-      border: 1px dashed #b7d8ff;
-      color: #124687;
+      background: #f6ecf2;
+      border: 1px dashed #e0bfd1;
+      color: #8a4f6a;
       font-size: 12px;
     }
 
     .chat-input-row {
       display: grid;
-      grid-template-columns: 1fr auto;
+      grid-template-columns: 1fr 132px;
       gap: 8px;
+      align-items: end;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff4f2;
+    }
+
+    #agentPrompt {
+      min-height: 64px;
+      max-height: 130px;
+      border-radius: 12px;
+      border-color: #e7cfd2;
+    }
+
+    #sendAgentBtn {
+      min-height: 52px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      box-shadow: 0 8px 16px rgba(201, 111, 136, 0.25);
     }
 
     .small {
@@ -368,7 +430,12 @@
       }
 
       .chat-wrap {
-        min-height: 420px;
+        grid-template-columns: 1fr;
+        height: min(74vh, 760px);
+      }
+
+      .chat-sidebar {
+        max-height: 180px;
       }
     }
   </style>
@@ -419,32 +486,32 @@
           <h2 class="title" style="font-size:18px;margin:0;">Agent Assistant</h2>
           <p class="subtitle">Chat naturally with your todo agent</p>
         </div>
+        <button id="newSessionBtn" class="ghost" type="button">New Chat</button>
       </div>
       <div class="body chat-wrap">
-        <div id="chatFeed" class="chat-feed"></div>
+        <aside class="chat-sidebar">
+          <div id="sessionList" class="session-list"></div>
+        </aside>
+        <div class="chat-main">
+          <div id="chatFeed" class="chat-feed"></div>
 
-        <div class="suggestions">
-          <button data-prompt="List my tasks and summarize pending ones">Summarize pending</button>
-          <button data-prompt="Add task: plan team retrospective, status pending">Create planning task</button>
-          <button data-prompt="Mark task 1 as done">Mark task done</button>
-        </div>
-
-        <div class="chat-input-row">
-          <textarea id="agentPrompt" placeholder="Message FlowList assistant..."></textarea>
-          <button id="sendAgentBtn">Send</button>
-        </div>
-
-        <details>
-          <summary>Profile setup</summary>
-          <div class="stack" style="margin-top:8px;">
-            <div class="grid2">
-              <input id="firstName" placeholder="first_name" />
-              <input id="lastName" placeholder="last_name" />
-            </div>
-            <input id="profilePicture" placeholder="profile_picture URL" />
-            <button id="createProfileBtn" class="ghost">Create Profile</button>
+          <div class="chat-input-row">
+            <textarea id="agentPrompt" placeholder="Message FlowList assistant..."></textarea>
+            <button id="sendAgentBtn">Send</button>
           </div>
-        </details>
+
+          <details>
+            <summary>Profile setup</summary>
+            <div class="stack" style="margin-top:8px;">
+              <div class="grid2">
+                <input id="firstName" placeholder="first_name" />
+                <input id="lastName" placeholder="last_name" />
+              </div>
+              <input id="profilePicture" placeholder="profile_picture URL" />
+              <button id="createProfileBtn" class="ghost">Create Profile</button>
+            </div>
+          </details>
+        </div>
       </div>
     </section>
   </div>
@@ -491,6 +558,9 @@
       accessToken: null,
       refreshToken: null,
       userId: null,
+      sessions: [],
+      currentSessionId: null,
+      sessionTitles: {},
       tasks: [],
       chat: [],
       authMode: "login",
@@ -512,6 +582,8 @@
         state.accessToken = parsed.accessToken || null;
         state.refreshToken = parsed.refreshToken || null;
         state.userId = parsed.userId || null;
+        state.currentSessionId = parsed.currentSessionId || null;
+        state.sessionTitles = parsed.sessionTitles || {};
       } catch (_) {
         localStorage.removeItem(STORAGE_KEY);
       }
@@ -522,6 +594,8 @@
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,
         userId: state.userId,
+        currentSessionId: state.currentSessionId,
+        sessionTitles: state.sessionTitles,
       }));
     }
 
@@ -529,6 +603,9 @@
       state.accessToken = null;
       state.refreshToken = null;
       state.userId = null;
+      state.sessions = [];
+      state.currentSessionId = null;
+      state.sessionTitles = {};
       state.tasks = [];
       state.chat = [];
       localStorage.removeItem(STORAGE_KEY);
@@ -571,9 +648,142 @@
       state.chat = [];
       saveState();
       byId("authPanel").classList.remove("open");
+      await loadSessions(true);
       await loadAgentHistory();
       addChat("system", `Welcome back, user ${out.user_id}. History synced.`);
       await loadTasks();
+    }
+
+    function summarizeTitle(text) {
+      const cleaned = String(text || "")
+        .replace(/\s+/g, " ")
+        .replace(/[^a-zA-Z0-9\s]/g, " ")
+        .trim();
+
+      if (!cleaned) {
+        return "New Chat";
+      }
+
+      const words = cleaned.split(" ").filter(Boolean).slice(0, 5);
+      if (!words.length) {
+        return "New Chat";
+      }
+      return words.join(" ");
+    }
+
+    async function fetchSessionTitle(sessionId) {
+      const history = await api("GET", "/agent/history", {
+        auth: true,
+        params: { session_id: sessionId, limit: 30 },
+      });
+
+      if (!Array.isArray(history) || !history.length) {
+        return "New Chat";
+      }
+
+      const firstUser = history.find((m) => m && m.role === "user" && typeof m.content === "string");
+      const baseText = firstUser && firstUser.content ? firstUser.content : history[0].content;
+      return summarizeTitle(baseText);
+    }
+
+    async function hydrateSessionTitles() {
+      if (!state.accessToken || !state.sessions.length) {
+        return;
+      }
+
+      const needsTitle = state.sessions
+        .map((s) => s.id)
+        .filter((id) => !state.sessionTitles[id]);
+
+      if (!needsTitle.length) {
+        return;
+      }
+
+      await Promise.all(
+        needsTitle.map(async (sessionId) => {
+          try {
+            state.sessionTitles[sessionId] = await fetchSessionTitle(sessionId);
+          } catch (_) {
+            state.sessionTitles[sessionId] = "New Chat";
+          }
+        })
+      );
+
+      saveState();
+    }
+
+    function renderSessions() {
+      const list = byId("sessionList");
+      list.innerHTML = "";
+
+      if (!state.accessToken) {
+        const empty = document.createElement("div");
+        empty.className = "session-empty";
+        empty.textContent = "Login to view chats";
+        list.appendChild(empty);
+        return;
+      }
+
+      if (!state.sessions.length) {
+        const empty = document.createElement("div");
+        empty.className = "session-empty";
+        empty.textContent = "No chats yet";
+        list.appendChild(empty);
+        return;
+      }
+
+      state.sessions.forEach((session) => {
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = `session-item ${state.currentSessionId === session.id ? "active" : ""}`;
+        item.dataset.sessionId = String(session.id);
+        item.title = state.sessionTitles[session.id] || "New Chat";
+        item.textContent = state.sessionTitles[session.id] || "New Chat";
+        list.appendChild(item);
+      });
+    }
+
+    async function loadSessions(selectLatest = false) {
+      if (!state.accessToken) {
+        state.sessions = [];
+        state.currentSessionId = null;
+        renderSessions();
+        return;
+      }
+
+      const sessions = await api("GET", "/agent/sessions", { auth: true });
+      state.sessions = Array.isArray(sessions) ? sessions : [];
+      state.sessionTitles = Object.fromEntries(
+        Object.entries(state.sessionTitles).filter(([id]) =>
+          state.sessions.some((session) => String(session.id) === String(id))
+        )
+      );
+
+      const hasSelected = state.sessions.some((s) => s.id === state.currentSessionId);
+      if (!hasSelected) {
+        state.currentSessionId = null;
+      }
+
+      if ((selectLatest || state.currentSessionId === null) && state.sessions.length) {
+        state.currentSessionId = state.sessions[0].id;
+      }
+
+      await hydrateSessionTitles();
+      renderSessions();
+      saveState();
+    }
+
+    async function createNewSession() {
+      const out = await api("POST", "/agent/sessions", { auth: true });
+      if (!out || !out.id) {
+        throw new Error("Failed to create session.");
+      }
+      await loadSessions(true);
+      state.currentSessionId = out.id;
+      state.sessionTitles[out.id] = state.sessionTitles[out.id] || "New Chat";
+      renderSessions();
+      saveState();
+      return out;
     }
 
     function addChat(role, text) {
@@ -608,6 +818,7 @@
       byId("authText").textContent = signedIn ? "Signed in" : "Signed out";
       byId("authUser").textContent = `User: ${state.userId ?? "-"}`;
       byId("authPanel").classList.toggle("open", !signedIn);
+      byId("newSessionBtn").disabled = !signedIn;
     }
 
     function renderTasks() {
@@ -722,9 +933,16 @@
         renderChat();
         return;
       }
+
+      if (!state.currentSessionId) {
+        state.chat = [];
+        renderChat();
+        return;
+      }
+
       const history = await api("GET", "/agent/history", {
         auth: true,
-        params: { limit: 100 },
+        params: { limit: 100, session_id: state.currentSessionId },
       });
       state.chat = Array.isArray(history)
         ? history
@@ -815,14 +1033,32 @@
         return;
       }
 
+      if (!state.accessToken) {
+        addChat("system", "Error: Please login first.");
+        return;
+      }
+
+      if (!state.currentSessionId) {
+        addChat("system", "Error: Create or select a session first.");
+        return;
+      }
+
       input.value = "";
 
       try {
         addChat("user", prompt);
         const out = await api("POST", "/agent/execute", {
           auth: true,
-          body: { instruction: prompt },
+          body: { instruction: prompt, session_id: state.currentSessionId },
         });
+        if (out && out.session_id) {
+          state.currentSessionId = out.session_id;
+          if (prompt) {
+            state.sessionTitles[out.session_id] = summarizeTitle(prompt);
+          }
+          saveState();
+          await loadSessions();
+        }
         const reply = out && out.result ? String(out.result) : "Done.";
         addChat("assistant", reply);
         await loadTasks();
@@ -841,21 +1077,36 @@
       }
     });
 
-    document.querySelectorAll(".suggestions button[data-prompt]").forEach((btn) => {
-      btn.onclick = () => {
-        byId("agentPrompt").value = btn.dataset.prompt || "";
-      };
+    byId("newSessionBtn").onclick = () => run(async () => {
+      const out = await createNewSession();
+      await loadAgentHistory();
+      if (out.message) {
+        addChat("system", out.message);
+      } else {
+        addChat("system", "Started New Chat.");
+      }
+    });
+
+    byId("sessionList").onclick = (event) => run(async () => {
+      const item = event.target.closest("button[data-session-id]");
+      if (!item) {
+        return;
+      }
+      state.currentSessionId = Number(item.dataset.sessionId);
+      saveState();
+      renderSessions();
+      await loadAgentHistory();
     });
 
     loadState();
     setAuthMode("login");
     renderAuth();
+    renderSessions();
     renderChat();
-    loadAgentHistory().catch(() => {
-      renderChat();
-    });
-    loadTasks().catch(() => {
-      renderTasks();
+    run(async () => {
+      await loadSessions();
+      await loadAgentHistory();
+      await loadTasks();
     });
   </script>
 </body>

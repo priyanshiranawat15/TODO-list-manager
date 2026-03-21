@@ -20,7 +20,7 @@ from security import (
     create_access_token,
     create_refresh_token,
 )
-from ai_agent import run_agent_for_user
+from ai_agent import run_agent_for_session
 
 load_dotenv()
 
@@ -341,20 +341,94 @@ def create_user_profile(request: Request, first_name: str, last_name: str, profi
 
 class AgentRequest(BaseModel):
     instruction: str
+    session_id: int | None = None
+
+
+@app.post("/agent/sessions", dependencies=[Depends(bearer_scheme)])
+def create_agent_session(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user_id = request.state.user_id
+
+    existing_session = (
+        db.query(models.AgentSession)
+        .filter(
+            models.AgentSession.user_id == user_id,
+            ~models.AgentSession.messages.any(),
+        )
+        .order_by(models.AgentSession.created_at.desc(), models.AgentSession.id.desc())
+        .first()
+    )
+
+    if existing_session:
+        return {
+            "id": existing_session.id,
+            "message": "Empty session already exists. Use this session.",
+            "created_at": existing_session.created_at.isoformat() if existing_session.created_at else None,
+            "updated_at": existing_session.updated_at.isoformat() if existing_session.updated_at else None,
+        }
+
+    new_session = models.AgentSession(user_id=user_id)
+    db.add(new_session)
+    db.commit()
+    db.refresh(new_session)
+
+    return {
+        "id": new_session.id,
+        "created_at": new_session.created_at.isoformat() if new_session.created_at else None,
+        "updated_at": new_session.updated_at.isoformat() if new_session.updated_at else None,
+    }
+
+
+@app.get("/agent/sessions", dependencies=[Depends(bearer_scheme)])
+def list_agent_sessions(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user_id = request.state.user_id
+    sessions = (
+        db.query(models.AgentSession)
+        .filter(models.AgentSession.user_id == user_id)
+        .order_by(models.AgentSession.created_at.desc())
+        .all()
+    )
+
+    return [
+        {
+            "id": session.id,
+            "created_at": session.created_at.isoformat() if session.created_at else None,
+            "updated_at": session.updated_at.isoformat() if session.updated_at else None,
+            "last_response_id": session.last_response_id,
+        }
+        for session in sessions
+    ]
 
 
 @app.get("/agent/history", dependencies=[Depends(bearer_scheme)])
 def agent_history(
     request: Request,
+    session_id: int,
     limit: int = 50,
     db: Session = Depends(get_db),
 ):
     user_id = request.state.user_id
     bounded_limit = max(1, min(limit, 200))
 
+    session = (
+        db.query(models.AgentSession)
+        .filter(
+            models.AgentSession.id == session_id,
+            models.AgentSession.user_id == user_id,
+        )
+        .first()
+    )
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
     rows = (
         db.query(models.Message)
-        .filter(models.Message.user_id == user_id)
+        .filter(models.Message.session_id == session_id)
         .order_by(models.Message.created_at.desc())
         .limit(bounded_limit)
         .all()
@@ -379,10 +453,31 @@ async def agent_execute(
 ):
     auth_header = request.headers.get("Authorization")
 
-    user_id = request.state.user_id  
+    user_id = request.state.user_id
+    created_new_session = False
+
+    if payload.session_id is None:
+        session = models.AgentSession(user_id=user_id)
+        db.add(session)
+        db.flush()
+        session_id = session.id
+        created_new_session = True
+    else:
+        session = (
+            db.query(models.AgentSession)
+            .filter(
+                models.AgentSession.id == payload.session_id,
+                models.AgentSession.user_id == user_id,
+            )
+            .first()
+        )
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        session_id = session.id
 
     try:
-        result = await run_agent_for_user(
+        result = await run_agent_for_session(
+            session_id=session_id,
             user_id=user_id,
             auth_header=auth_header,
             instruction=payload.instruction,
@@ -397,10 +492,16 @@ async def agent_execute(
     assistant_text = str(result) if result is not None else ""
     db.add_all(
         [
-            models.Message(user_id=user_id, role="user", content=payload.instruction),
-            models.Message(user_id=user_id, role="assistant", content=assistant_text),
+            models.Message(session_id=session_id, role="user", content=payload.instruction),
+            models.Message(session_id=session_id, role="assistant", content=assistant_text),
         ]
     )
     db.commit()
 
-    return {"ok": True, "user_id": user_id, "result": assistant_text}
+    return {
+        "ok": True,
+        "user_id": user_id,
+        "session_id": session_id,
+        "created_new_session": created_new_session,
+        "result": assistant_text,
+    }
